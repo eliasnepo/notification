@@ -11,6 +11,7 @@ data class NotificationTemplate(
         @GeneratedValue(strategy = GenerationType.IDENTITY)
         val id: Long? = null,
         @Column(nullable = false)
+        @Enumerated(EnumType.STRING)
         val type: NotificationType,
         @Column(nullable = false)
         val title: String,
