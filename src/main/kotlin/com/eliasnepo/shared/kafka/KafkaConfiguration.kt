@@ -1,5 +1,6 @@
 package com.eliasnepo.shared.kafka
 
+import com.eliasnepo.shared.kafka.dto.NotificationActionEvent
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.springframework.beans.factory.annotation.Autowired
@@ -10,6 +11,7 @@ import org.springframework.kafka.annotation.EnableKafka
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory
 import org.springframework.kafka.core.ConsumerFactory
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory
+import org.springframework.kafka.support.serializer.JsonDeserializer
 
 @Configuration
 @EnableKafka
@@ -18,21 +20,22 @@ class KafkaConfiguration {
     @Autowired
     private lateinit var kafkaProperties: KafkaProperties
 
-    @Bean
-    fun consumerFactory(): ConsumerFactory<String, String> {
-        val props: MutableMap<String, Any> = HashMap()
-        props[ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG] = kafkaProperties.bootstrapServers
-        props[ConsumerConfig.GROUP_ID_CONFIG] = kafkaProperties.consumer.groupId
-        props[ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG] = kafkaProperties.consumer.keyDeserializer
-        props[ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG] = kafkaProperties.consumer.valueDeserializer
-        props[ConsumerConfig.AUTO_OFFSET_RESET_CONFIG] = kafkaProperties.consumer.autoOffsetReset
-        return DefaultKafkaConsumerFactory(props)
+    private fun consumerFactory(jsonDeserializerName: Class<*>): DefaultKafkaConsumerFactory<String, *> {
+        val properties = mapOf<String, Any>(
+            ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to kafkaProperties.bootstrapServers,
+            ConsumerConfig.GROUP_ID_CONFIG to kafkaProperties.consumer.groupId,
+            ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to kafkaProperties.consumer.keyDeserializer,
+            ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to kafkaProperties.consumer.valueDeserializer,
+            ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to kafkaProperties.consumer.autoOffsetReset,
+            JsonDeserializer.TRUSTED_PACKAGES to "*"
+        )
+        return DefaultKafkaConsumerFactory(properties, StringDeserializer(), JsonDeserializer(jsonDeserializerName))
     }
 
     @Bean
-    fun kafkaListenerContainerFactory(): ConcurrentKafkaListenerContainerFactory<String, String> {
-        val factory = ConcurrentKafkaListenerContainerFactory<String, String>()
-        factory.consumerFactory = consumerFactory()
+    fun notificationActionEventContainerFactory(): ConcurrentKafkaListenerContainerFactory<String, NotificationActionEvent> {
+        val factory = ConcurrentKafkaListenerContainerFactory<String, NotificationActionEvent>()
+        factory.consumerFactory = consumerFactory(NotificationActionEvent::class.java) as ConsumerFactory<String, NotificationActionEvent>
         return factory
     }
 }
