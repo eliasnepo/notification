@@ -3,5 +3,5 @@ package com.eliasnepo.notifications
 enum class NotificationTarget {
     EMAIL,
     SMS,
-    PLATFORM
+    PUSH_NOTIFICATION
 }
